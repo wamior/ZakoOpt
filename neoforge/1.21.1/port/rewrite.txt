@@ -7,3 +7,12 @@ net\.fabricmc\.loader\.api\.FabricLoader => zako.opt.loader.FabricLoader
 # Sodium finds NeoForge config entry points through this annotation
 ^import net\.caffeinemc\.mods\.sodium\.api\.config\.ConfigEntryPoint;$ => import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;\nimport net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
 ^public class SodiumOptions implements ConfigEntryPoint \{ => @ConfigEntryPointForge("zakoopt")\npublic class SodiumOptions implements ConfigEntryPoint {
+# --- 1.21.1 API differences ---
+new TextureTarget\(w, h, true\) => new TextureTarget(w, h, true, net.minecraft.client.Minecraft.ON_OSX)
+target\.resize\(w, h\) => target.resize(w, h, net.minecraft.client.Minecraft.ON_OSX)
+target\.clear\(\) => target.clear(net.minecraft.client.Minecraft.ON_OSX)
+target\.blitAndBlendToScreen\(main\.width, main\.height\) => target.blitToScreen(main.width, main.height, false)
+SectionRenderDataUnsafe\.getElementCount => SectionRenderDataUnsafe.getVertexCount
+Minecraft\.getInstance\(\)\.getFramerateLimitTracker\(\)\.onInputReceived\(\); => // (1.21.1 has no framerate limit tracker)
+new GameRules\(WorldDataConfiguration\.DEFAULT\.enabledFeatures\(\)\) => new GameRules()
+private final class Texture extends AbstractTexture \{ => private final class Texture extends AbstractTexture {\n        public void load(net.minecraft.server.packs.resources.ResourceManager manager) {}

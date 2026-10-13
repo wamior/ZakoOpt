@@ -35,3 +35,12 @@ zako/opt/mixin/text/FontMixin.java
 zako/opt/mixin/block/SpawnerRendererMixin.java
 zako/opt/mixin/entity/ItemRendererMixin.java
 zako/opt/mixin/entity/LevelRendererOutlineMixin.java
+zako/opt/entity/FastCubes.java
+zako/opt/entity/ParallelModels.java
+zako/opt/gl/RingBuilders.java
+zako/opt/mixin/gl/ByteBufferBuilderMoveMixin.java
+zako/opt/mixin/gl/ByteBufferBuilderPoolMixin.java
+zako/opt/mixin/gl/BufferBuilderReserveMixin.java
+zako/opt/mixin/entity/ModelPartCubeMixin.java
+zako/opt/mixin/entity/ModelPartFastMixin.java
+zako/opt/mixin/entity/ModelParallelMixin.java
