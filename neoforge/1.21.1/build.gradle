@@ -38,6 +38,12 @@ configurations {
 // A mod jar that carries its real jar inside META-INF/jarjar (Sodium does) is unpacked to build/nested-libs first.
 def nestedLibs = layout.buildDirectory.dir('nested-libs')
 def prepareLibs = tasks.register('prepareLibs', Sync) {
+	doFirst {
+		def need = ['sodium', 'iris', 'immediatelyfast']
+		def have = fileTree(dir: 'libs', include: '*.jar').files*.name*.toLowerCase()
+		def missing = need.findAll { n -> !have.any { it.contains(n) } }
+		if (missing) throw new GradleException("Нет jar-ов в neoforge/1.21.1/libs: ${missing.join(', ')} (см. libs/README.md)")
+	}
 	into nestedLibs
 	fileTree(dir: 'libs', include: '*.jar').each { jar ->
 		from(zipTree(jar)) {
