@@ -1,0 +1,6 @@
+# upstream folders (in ../zakoopt) compiled for Minecraft 1.21.1, in order; a file present in two layers: the later one wins
+common
+# 1.21.4 is the oldest version module upstream has; 1.21.1 shares its rendering code wherever the game did not change
+1.21.4
+# Sodium 0.8 exists for 1.21.1 too; its config API and leaf culling replace the Sodium 0.6 ones of 1.21.4
+sodium-0.8

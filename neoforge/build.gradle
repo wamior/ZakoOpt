@@ -1,0 +1,10 @@
+// NeoForge build of ZakoOpt. The Fabric project in ../zakoopt is upstream and is never edited from here:
+// this build only reads it. See README.md for how to take new upstream commits.
+def upstreamProps = new Properties()
+rootProject.file('../zakoopt/gradle.properties').withInputStream { upstreamProps.load(it) }
+
+allprojects {
+	group = 'zako.opt'
+	version = upstreamProps.getProperty('version')
+	ext.lombok_version = upstreamProps.getProperty('lombok_version')
+}

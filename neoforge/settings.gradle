@@ -1,0 +1,11 @@
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+		maven { url = 'https://maven.neoforged.net/releases' }
+	}
+}
+
+rootProject.name = 'zakoopt-neoforge'
+
+// one folder per Minecraft version; each assembles its sources from ../zakoopt (see port.gradle)
+include '1.21.1'

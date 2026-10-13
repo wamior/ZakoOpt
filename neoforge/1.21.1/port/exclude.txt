@@ -1,0 +1,37 @@
+# upstream files that do not belong in the Minecraft 1.21.1 build (they need classes the game got in 1.21.2 or later).
+# A feature whose mixins are missing is hidden from the options screens by upstream's own check (FeatureData.mixins).
+# Paths are relative to src/main/java|resources of the layer; * and ** work.
+
+# Fabric-only
+zako/opt/ModMenuEntry.java
+
+# entity render states (1.21.2+)
+zako/opt/mixin/entity/EntityRenderStateEntityMixin.java
+zako/opt/mixin/entity/EntityRendererStateMixin.java
+zako/opt/mixin/entity/ItemClusterRenderStateMixin.java
+zako/opt/mixin/entity/EntityRendererNameMixin.java
+zako/opt/mixin/entity/EntityRendererLookupMixin.java
+zako/opt/mixin/entity/LivingEntityAnimFreezeMixin.java
+zako/opt/mixin/entity/LivingEntityRendererChecksMixin.java
+zako/opt/mixin/entity/LivingEntityRendererSkinMixin.java
+zako/opt/mixin/entity/PlayerRendererParrotMixin.java
+zako/opt/mixin/entity/PlayerLodMixin.java
+zako/opt/mixin/entity/LevelRendererParallelMixin.java
+zako/opt/mixin/entity/DisplayCullMixin.java
+zako/opt/block/SpawnerCache.java
+
+# render pipeline of 1.21.5+ / frame graph / tracy
+zako/opt/mixin/gl/FrameGraphTimerMixin.java
+zako/opt/mixin/gl/ByteBufferBuilderMixin.java
+zako/opt/mixin/gl/BatchableBufferSourceMixin.java
+zako/opt/mixin/gl/BufferUploaderMixin.java
+zako/opt/mixin/gl/RenderSystemMixin.java
+zako/opt/gl/ImmediateRing.java
+zako/opt/mixin/particle/ParticleEngineLodMixin.java
+zako/opt/mixin/particle/ParticleEngineParallelMixin.java
+zako/opt/mixin/text/FontMixin.java
+
+# mixins that target a class which did not exist yet, replaced by 1.21.1 versions in src/main/java
+zako/opt/mixin/block/SpawnerRendererMixin.java
+zako/opt/mixin/entity/ItemRendererMixin.java
+zako/opt/mixin/entity/LevelRendererOutlineMixin.java

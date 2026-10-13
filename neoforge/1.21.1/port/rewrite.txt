@@ -1,0 +1,9 @@
+# regex => replacement   (applied to every line of every upstream .java file)
+# Fabric Loader API -> the stand-in in shim/
+net\.fabricmc\.loader\.api\.FabricLoader => zako.opt.loader.FabricLoader
+# Minecraft renamed ResourceLocation to Identifier in 1.21.11; the sodium-0.8 layer is written with the new name
+\bnet\.minecraft\.resources\.Identifier\b => net.minecraft.resources.ResourceLocation
+\bIdentifier\b => ResourceLocation
+# Sodium finds NeoForge config entry points through this annotation
+^import net\.caffeinemc\.mods\.sodium\.api\.config\.ConfigEntryPoint;$ => import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;\nimport net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
+^public class SodiumOptions implements ConfigEntryPoint \{ => @ConfigEntryPointForge("zakoopt")\npublic class SodiumOptions implements ConfigEntryPoint {

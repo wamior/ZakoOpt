@@ -1,0 +1,95 @@
+plugins {
+	id 'java-library'
+	id 'net.neoforged.moddev' version '2.0.148'
+}
+
+apply from: "${rootDir}/port.gradle"
+
+base.archivesName = 'zakoopt'
+version = "${rootProject.version}+${minecraft_version}-neoforge"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+	mavenCentral()
+}
+
+neoForge {
+	version = project.neo_version
+
+	runs {
+		client {
+			client()
+		}
+	}
+
+	mods {
+		zakoopt {
+			sourceSet(sourceSets.main)
+		}
+	}
+}
+
+configurations {
+	runtimeClasspath.extendsFrom localRuntime
+}
+
+// optional mods the code is compiled against (Sodium, Iris, ImmediatelyFast...): drop their NeoForge jars into libs/, see libs/README.md.
+// A mod jar that carries its real jar inside META-INF/jarjar (Sodium does) is unpacked to build/nested-libs first.
+def nestedLibs = layout.buildDirectory.dir('nested-libs')
+def prepareLibs = tasks.register('prepareLibs', Sync) {
+	into nestedLibs
+	fileTree(dir: 'libs', include: '*.jar').each { jar ->
+		from(zipTree(jar)) {
+			include 'META-INF/jarjar/*.jar'
+			eachFile { it.path = it.name }
+			includeEmptyDirs = false
+		}
+	}
+	inputs.files(fileTree(dir: 'libs', include: '*.jar'))
+}
+
+dependencies {
+	compileOnly "org.projectlombok:lombok:${lombok_version}"
+	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+	compileOnly fileTree(dir: 'libs', include: '*.jar')
+	compileOnly fileTree(nestedLibs) { builtBy prepareLibs }
+	localRuntime fileTree(nestedLibs) { builtBy prepareLibs }
+}
+
+sourceSets.main {
+	java.srcDir(assembleJavaTask)
+	java.srcDir(rootProject.file('shim/src/main/java'))
+	resources.srcDir(assembleResourcesTask)
+	resources.srcDir(generateMixinConfigsTask)
+}
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+	def props = [
+		minecraft_version      : minecraft_version,
+		minecraft_version_range: minecraft_version_range,
+		neo_version            : neo_version,
+		loader_version_range   : loader_version_range,
+		mod_version            : project.rootProject.version.toString(),
+		sodium_min             : sodium_min,
+		mixin_configs          : mixinConfigNames.collect { "[[mixins]]\nconfig=\"${it}\"\n" }.join('\n'),
+	]
+	inputs.properties props
+	expand props
+	from 'src/main/templates'
+	into layout.buildDirectory.dir('generated/modMetadata')
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release = 21
+	dependsOn generateMixinConfigsTask
+}
+
+jar {
+	from(rootProject.file('../COPYING'))
+	from(rootProject.file('../COPYING.LESSER'))
+	from(rootProject.file('../NOTICE'))
+}

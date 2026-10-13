@@ -1,0 +1,175 @@
+// Assembles the NeoForge sources of one Minecraft version out of the Fabric project in ../zakoopt (upstream) without changing it.
+//
+//   <version>/port/layers.txt    upstream layer folders to compile, in order (one per line)
+//   <version>/port/exclude.txt   upstream files to leave out (paths below src/main/java|resources, * and ** allowed)
+//   <version>/port/rewrite.txt   regex => replacement, applied to every upstream .java line
+//   <version>/src/main/**        our own files; a file at the same path as an upstream one replaces it
+//   shim/src/main/java           loader stand-ins shared by every version (Fabric Loader API on top of FML)
+//
+// Because upstream files are only read, `git pull upstream main` never conflicts with this tree.
+
+def portDir = project.file('port')
+def upstream = rootProject.file('../zakoopt')
+
+def readLines = { File f ->
+	f.exists() ? f.readLines('UTF-8').collect { it.replaceAll(/\s+#.*$/, '').trim() }.findAll { it && !it.startsWith('#') } : []
+}
+
+def layers = readLines(new File(portDir, 'layers.txt'))
+def excludes = readLines(new File(portDir, 'exclude.txt'))
+def rewrites = readLines(new File(portDir, 'rewrite.txt')).collect {
+	def parts = it.split(/\s=>\s/, 2)
+	if (parts.length != 2) {
+		throw new GradleException("${project.name}: bad rewrite rule '${it}', expected 'regex => replacement'")
+	}
+	[java.util.regex.Pattern.compile(parts[0]), java.util.regex.Matcher.quoteReplacement(parts[1].replace('\\n', '\n'))]
+}
+
+ext.upstreamLayers = layers
+
+def genDir = layout.buildDirectory.dir('port')
+def genJava = genDir.map { it.dir('java') }
+def genRes = genDir.map { it.dir('resources') }
+
+def ownJava = project.file('src/main/java')
+def ownRes = project.file('src/main/resources')
+
+def toRegex = { String glob ->
+	def sb = new StringBuilder()
+	def chars = glob.toCharArray()
+	int i = 0
+	while (i < chars.length) {
+		char c = chars[i]
+		if (c == '*' as char) {
+			if (i + 1 < chars.length && chars[i + 1] == '*' as char) {
+				sb.append('.*')
+				i += 2
+				if (i < chars.length && chars[i] == '/' as char) {
+					i++
+				}
+				continue
+			}
+			sb.append('[^/]*')
+		} else if ('.+()^$|{}[]\\?'.indexOf((int) c) >= 0) {
+			sb.append('\\').append(c)
+		} else {
+			sb.append(c)
+		}
+		i++
+	}
+	java.util.regex.Pattern.compile(sb.toString())
+}
+def excludePatterns = excludes.collect { toRegex(it) }
+
+def isExcluded = { String rel -> excludePatterns.any { it.matcher(rel).matches() } }
+
+def exists = { File root, String rel -> new File(root, rel).exists() }
+
+def assembleJava = tasks.register('assembleJava', Sync) {
+	group = 'port'
+	description = 'Upstream sources of the listed layers, minus excludes, with rewrite rules applied; our own files win'
+	into genJava
+	// the same path in two layers: the later layer wins
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	layers.each { layer ->
+		def root = new File(upstream, "${layer}/src/main/java")
+		from(root) {
+			exclude { details -> !details.directory && (isExcluded(details.relativePath.pathString) || exists(ownJava, details.relativePath.pathString)) }
+			filter { String line ->
+				rewrites.each { r -> line = r[0].matcher(line).replaceAll(r[1]) }
+				line
+			}
+		}
+	}
+	inputs.files(layers.collect { new File(upstream, "${it}/src/main/java") }).skipWhenEmpty().withPropertyName('upstreamJava')
+	inputs.files(new File(portDir, 'exclude.txt'))
+	inputs.files(new File(portDir, 'rewrite.txt'))
+	inputs.files(ownJava)
+}
+
+// the mixin configs: every layer brings zakoopt[-<layer>].mixins.json; the list of classes is cut down to those that are in the build
+def assembleResources = tasks.register('assembleResources', Sync) {
+	group = 'port'
+	description = 'Upstream resources (lang files, icon) of the layers; Fabric-only files and mixin configs are left to generateMixinConfigs'
+	into genRes
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	layers.each { layer ->
+		from(new File(upstream, "${layer}/src/main/resources")) {
+			exclude { details -> details.name == 'fabric.mod.json' || details.name.endsWith('.mixins.json') || isExcluded(details.relativePath.pathString) || exists(ownRes, details.relativePath.pathString) }
+		}
+	}
+}
+
+def mixinsOut = layout.buildDirectory.dir('port/mixins')
+def generateMixinConfigs = tasks.register('generateMixinConfigs') {
+	group = 'port'
+	description = 'Writes the mixin config(s): upstream lists and our own, without the classes that are not part of this build'
+	dependsOn assembleJava
+	def outDir = mixinsOut
+	inputs.files(assembleJava)
+	inputs.files(ownJava)
+	inputs.files(ownRes)
+	layers.each { layer -> inputs.files(new File(upstream, "${layer}/src/main/resources")) }
+	inputs.files(new File(portDir, 'exclude.txt'))
+	outputs.dir(outDir)
+	doLast {
+		def slurper = new groovy.json.JsonSlurper()
+		def javaRoots = [genJava.get().asFile, ownJava]
+		def built = { String mixin ->
+			def path = 'zako/opt/mixin/' + mixin.replace('.', '/') + '.java'
+			javaRoots.any { new File(it, path).exists() }
+		}
+		// config files to read, in order: (layer resources..., our resources)
+		def sources = layers.collect { new File(upstream, "${it}/src/main/resources") } + [ownRes]
+		def configs = new LinkedHashMap<String, Map>()
+		sources.each { dir ->
+			if (!dir.isDirectory()) {
+				return
+			}
+			dir.listFiles().findAll { it.name =~ /^zakoopt(-.+)?\.mixins\.json$/ }.sort { it.name }.each { f ->
+				def json = slurper.parseText(f.getText('UTF-8'))
+				def target = configs.computeIfAbsent(f.name) { [package: json.package, plugin: json.plugin, compatibilityLevel: json.compatibilityLevel, required: json.required, client: new LinkedHashSet<String>(), mixins: new LinkedHashSet<String>(), injectors: json.injectors] }
+				(json.client ?: []).each { target.client << it }
+				(json.mixins ?: []).each { target.mixins << it }
+			}
+		}
+		def dir = outDir.get().asFile
+		project.delete(dir)
+		dir.mkdirs()
+		def written = []
+		configs.each { name, cfg ->
+			def out = [required: cfg.required, package: cfg.package]
+			if (cfg.plugin) {
+				out.plugin = cfg.plugin
+			}
+			out.compatibilityLevel = cfg.compatibilityLevel
+			def client = cfg.client.findAll { built(it) }
+			def common = cfg.mixins.findAll { built(it) }
+			if (common) {
+				out.mixins = common
+			}
+			if (client) {
+				out.client = client
+			}
+			out.injectors = cfg.injectors ?: [defaultRequire: 1]
+			new File(dir, name).setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(out)) + '\n', 'UTF-8')
+			written << name
+			def dropped = (cfg.client + cfg.mixins).findAll { !built(it) }
+			if (dropped) {
+				logger.info("${project.name}: ${name}: ${dropped.size()} mixins not in this build: ${dropped}")
+			}
+		}
+	}
+}
+
+// known up front (the mods.toml needs them at configuration time): one file per layer that has it, plus our own
+ext.mixinConfigNames = (layers.collect { new File(upstream, "${it}/src/main/resources") } + [ownRes]).collectMany { dir ->
+	dir.isDirectory() ? dir.listFiles().findAll { it.name =~ /^zakoopt(-.+)?\.mixins\.json$/ }*.name : []
+}.unique().sort()
+
+ext.assembleJavaTask = assembleJava
+ext.assembleResourcesTask = assembleResources
+ext.generateMixinConfigsTask = generateMixinConfigs
+ext.genJavaDir = genJava
+ext.genResDir = genRes
+ext.mixinsOutDir = mixinsOut
