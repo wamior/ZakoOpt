@@ -14,7 +14,7 @@ JDK 21, положить jar-ы Sodium/Iris/ImmediatelyFast в `1.21.1/libs/` (�
 
     git remote add upstream https://github.com/3ako/ZakoOpt   # один раз
     git pull upstream main
-    neoforge/tools/sync-status.sh                              # что изменилось и что требует адаптации
+    neoforge/scripts/sync-status.sh                              # что изменилось и что требует адаптации
 
 Затем попросите Claude адаптировать: новые миксины либо подхватятся автоматически, либо их нужно
 добавить в `exclude.txt` / написать версию под 1.21.1 в `1.21.1/src/main/java`. После адаптации обновить
@@ -25,5 +25,5 @@ JDK 21, положить jar-ы Sodium/Iris/ImmediatelyFast в `1.21.1/libs/` (�
 кэш спавнеров, LOD предметов, пропуск outline, часть частиц/шрифта). Список — `1.21.1/port/exclude.txt`.
 
 ## Проверка без игры
-`tools/check_mixins.py` + `tools/classindex.py` статически проверяют цели миксинов по jar-ам Minecraft/Sodium.
+`scripts/check_mixins.py` + `scripts/classindex.py` статически проверяют цели миксинов по jar-ам Minecraft/Sodium.
 Сборка через Gradle и запуск в игре в облаке не проверялись.
