@@ -16,3 +16,4 @@ SectionRenderDataUnsafe\.getElementCount => SectionRenderDataUnsafe.getVertexCou
 Minecraft\.getInstance\(\)\.getFramerateLimitTracker\(\)\.onInputReceived\(\); => // (1.21.1 has no framerate limit tracker)
 new GameRules\(WorldDataConfiguration\.DEFAULT\.enabledFeatures\(\)\) => new GameRules()
 private final class Texture extends AbstractTexture \{ => private final class Texture extends AbstractTexture {\n        public void load(net.minecraft.server.packs.resources.ResourceManager manager) {}
+CameraTransform camera, CallbackInfo ci\) => CameraTransform camera, boolean zakoopt$flag, CallbackInfo ci)
