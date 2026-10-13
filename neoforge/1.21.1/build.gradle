@@ -45,6 +45,7 @@ def prepareLibs = tasks.register('prepareLibs', Sync) {
 		if (missing) throw new GradleException("Нет jar-ов в neoforge/1.21.1/libs: ${missing.join(', ')} (см. libs/README.md)")
 	}
 	into nestedLibs
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	fileTree(dir: 'libs', include: '*.jar').each { jar ->
 		from(zipTree(jar)) {
 			include 'META-INF/jarjar/*.jar'
