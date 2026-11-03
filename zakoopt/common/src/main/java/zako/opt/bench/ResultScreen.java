@@ -36,7 +36,7 @@ public class ResultScreen extends Panel {
 		this.apply = apply;
 		for (ZakoOptions.Group group : ZakoOptions.GROUPS) {
 			for (ZakoOptions.Option option : group.available()) {
-				if (option instanceof ZakoOptions.Toggle t && !t.key().equals("update_check")) {
+				if (option instanceof ZakoOptions.Toggle t) {
 					(chosen.containsKey(t.key()) ? tested : other).add(t);
 				}
 			}

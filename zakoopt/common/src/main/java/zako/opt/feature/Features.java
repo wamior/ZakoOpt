@@ -71,7 +71,6 @@ public class Features {
 	public final GuiAnimatedItemsFeature GUI_ANIMATED_ITEMS = add(new GuiAnimatedItemsFeature());
 	public final BidiCacheFeature BIDI_CACHE = add(new BidiCacheFeature());
 	public final PreparedTextCacheFeature PREPARED_TEXT_CACHE = add(new PreparedTextCacheFeature());
-	public final UpdateCheckFeature UPDATE_CHECK = add(new UpdateCheckFeature());
 
 	// an array for the per-frame loop
 	private final Feature[] ALL = LIST.toArray(new Feature[0]);
